@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.apigatewayservice.name }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.apigatewayservice.name }}-deployment-label
+spec:
+  replicas: {{ .Values.apigatewayservice.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.apigatewayservice.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.apigatewayservice.name }}
+    spec:
+      nodeSelector:
+        workload: {{ .Values.apigatewayservice.nodeSelector }}
+      containers:
+        - name: {{ .Values.apigatewayservice.name }}-container
+          image: "{{ .Values.apigatewayservice.image.repository }}:{{ .Values.apigatewayservice.image.tag }}"
+          imagePullPolicy: {{ .Values.apigatewayservice.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.apigatewayservice.containerPort }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.apigatewayservice.secretName }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.apigatewayservice.name }}-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.apigatewayservice.name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.apigatewayservice.servicePort }}
+      targetPort: {{ .Values.apigatewayservice.containerPort }}
+  type: ClusterIP

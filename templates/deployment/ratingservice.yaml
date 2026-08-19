@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.ratingservice.name }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.ratingservice.name }}-deployment-label
+spec:
+  replicas: {{ .Values.ratingservice.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.ratingservice.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.ratingservice.name }}
+    spec:
+      nodeSelector:
+        workload: {{ .Values.ratingservice.nodeSelector }}
+      containers:
+        - name: {{ .Values.ratingservice.name }}-container
+          image: "{{ .Values.ratingservice.image.repository }}:{{ .Values.ratingservice.image.tag }}"
+          imagePullPolicy: {{ .Values.ratingservice.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.ratingservice.containerPort }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.ratingservice.secretName }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.ratingservice.name }}-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.ratingservice.name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.ratingservice.servicePort }}
+      targetPort: {{ .Values.ratingservice.containerPort }}
+  type: ClusterIP

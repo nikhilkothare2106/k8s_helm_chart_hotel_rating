@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.userservice.name }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.userservice.name }}-deployment-label
+spec:
+  replicas: {{ .Values.userservice.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.userservice.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.userservice.name }}
+    spec:
+      nodeSelector:
+        workload: {{ .Values.userservice.nodeSelector }}
+      containers:
+        - name: {{ .Values.userservice.name }}-container
+          image: "{{ .Values.userservice.image.repository }}:{{ .Values.userservice.image.tag }}"
+          imagePullPolicy: {{ .Values.userservice.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.userservice.containerPort }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.userservice.secretName }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.userservice.name }}-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.userservice.name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.userservice.servicePort }}
+      targetPort: {{ .Values.userservice.containerPort }}
+  type: ClusterIP

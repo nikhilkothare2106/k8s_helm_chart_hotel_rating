@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.java.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    {{- toYaml .Values.ingress.java.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.java.ingressClassName }}
+  rules:
+    - http:
+        paths:
+          {{- range .Values.ingress.java.rules }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ .serviceName }}
+                port:
+                  number: {{ .servicePort }}
+          {{- end }}

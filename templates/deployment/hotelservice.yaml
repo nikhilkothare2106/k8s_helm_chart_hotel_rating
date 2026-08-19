@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.hotelservice.name }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.hotelservice.name }}-deployment-label
+spec:
+  replicas: {{ .Values.hotelservice.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.hotelservice.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.hotelservice.name }}
+    spec:
+      nodeSelector:
+        workload: {{ .Values.hotelservice.nodeSelector }}
+      containers:
+        - name: {{ .Values.hotelservice.name }}-container
+          image: "{{ .Values.hotelservice.image.repository }}:{{ .Values.hotelservice.image.tag }}"
+          imagePullPolicy: {{ .Values.hotelservice.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.hotelservice.containerPort }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.hotelservice.secretName }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.hotelservice.name }}-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.hotelservice.name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.hotelservice.servicePort }}
+      targetPort: {{ .Values.hotelservice.containerPort }}
+  type: ClusterIP
