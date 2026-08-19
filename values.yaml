@@ -1,0 +1,121 @@
+namespace: dev
+
+apigatewayservice:
+  name: apigatewayservice
+  replicas: 1
+  image:
+    repository: 237974319000.dkr.ecr.ap-south-1.amazonaws.com/apigatewayservice
+    tag: v1
+  imagePullPolicy: IfNotPresent
+  containerPort: 8084
+  servicePort: 8080
+  nodeSelector: private
+  secretName: apigateway-secret
+
+frontendservice:
+  name: frontendservice
+  replicas: 1
+  image:
+    repository: 237974319000.dkr.ecr.ap-south-1.amazonaws.com/frontendservice
+    tag: v1
+  imagePullPolicy: Always
+  containerPort: 80
+  servicePort: 8080
+  nodeSelector: private
+  secretName: ""
+  
+
+hotelservice:
+  name: hotelservice
+  replicas: 1
+  image:
+    repository: 237974319000.dkr.ecr.ap-south-1.amazonaws.com/hotelservice
+    tag: v1
+  imagePullPolicy: IfNotPresent
+  containerPort: 8082
+  servicePort: 8080
+  nodeSelector: private
+  secretName: hotelservice-secret
+
+ratingservice:
+  name: ratingservice
+  replicas: 1
+  image:
+    repository: 237974319000.dkr.ecr.ap-south-1.amazonaws.com/ratingservice
+    tag: v1
+  imagePullPolicy: IfNotPresent
+  containerPort: 8083
+  servicePort: 8080
+  nodeSelector: private
+  secretName: ratingservice-secret
+
+serviceregistry:
+  name: serviceregistry
+  replicas: 1
+  image:
+    repository: 237974319000.dkr.ecr.ap-south-1.amazonaws.com/serviceregistry
+    tag: v1
+  imagePullPolicy: IfNotPresent
+  containerPort: 8761
+  servicePort: 8761
+  nodeSelector: private
+  secretName: registry-secret
+  serviceAnnotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /registry/actuator/health
+
+userservice:
+  name: userservice
+  replicas: 1
+  image:
+    repository: 237974319000.dkr.ecr.ap-south-1.amazonaws.com/userservice
+    tag: latest
+  imagePullPolicy: IfNotPresent
+  containerPort: 8081
+  servicePort: 8080
+  nodeSelector: private
+  secretName: userservice-secret
+
+ingress:
+  frontend:
+    name: frontend-ingress
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+      alb.ingress.kubernetes.io/load-balancer-name: eks-alb-frontend
+      alb.ingress.kubernetes.io/healthcheck-path: /
+      alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+      alb.ingress.kubernetes.io/success-codes: "200"
+    rules:
+      - path: /
+        pathType: Prefix
+        serviceName: frontendservice-service
+        servicePort: 8080
+
+  java:
+    name: java-ingress
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+      alb.ingress.kubernetes.io/load-balancer-name: eks-alb
+      alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+      alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+      alb.ingress.kubernetes.io/success-codes: "200"
+    rules:
+      - path: /registry
+        pathType: Prefix
+        serviceName: serviceregistry-service
+        servicePort: 8761
+      - path: /
+        pathType: Prefix
+        serviceName: apigatewayservice-service
+        servicePort: 8080
+
+
+externalSecrets:
+  secretStoreName: aws-secretsmanager-store
+  awsSecretKey: dev/myapp/all-secrets
+  refreshInterval: 1h
